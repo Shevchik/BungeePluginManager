@@ -41,7 +41,7 @@ public class PluginUtils {
 			}
 		} catch (Throwable t) {
 			severe("Exception disabling plugin", t, plugin.getDescription().getName());
-        }
+		}
 		//unregister event handlers
 		pluginmanager.unregisterListeners(plugin);
 		//unregister commands
