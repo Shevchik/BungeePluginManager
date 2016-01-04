@@ -25,6 +25,7 @@ public class Commands extends Command {
 	public void execute(CommandSender sender, String[] args) {
 		if (args.length < 2) {
 			sender.sendMessage(textWithColor("Not enough args", ChatColor.RED));
+			return;
 		}
 		switch (args[0].toLowerCase()) {
 			case "unload": {
