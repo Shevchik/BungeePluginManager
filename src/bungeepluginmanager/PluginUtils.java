@@ -65,7 +65,7 @@ public class PluginUtils {
 			}
 		}
 		//finish uncompleted intents
-		AsyncEventsListener.completeIntents(plugin);
+		ModifiedPluginEventBus.completeIntents(plugin);
 		//remove commands that were registered by plugin not through normal means
 		try {
 			Map<String, Command> commandMap = ReflectionUtils.getFieldValue(pluginmanager, "commandMap");
