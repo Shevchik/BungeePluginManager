@@ -1,0 +1,79 @@
+plugins {
+	id 'com.github.johnrengelman.shadow' version '5.0.0'
+	id 'java'
+}
+
+
+defaultTasks 'build'
+
+
+group 'bungeepluginmanager'
+version '2.0'
+sourceCompatibility = JavaVersion.VERSION_1_8
+
+
+File targetJarDirectory = new File("target")
+
+
+task setupFolders(type: DefaultTask) {doLast{
+	targetJarDirectory.mkdirs()
+}}
+
+
+sourceSets {
+	main {
+		java {
+			srcDirs = ['src']
+		}
+		resources {
+			srcDirs = ['resources']
+		}
+	}
+}
+
+
+repositories {
+	mavenCentral()
+	maven {
+		url 'https://oss.sonatype.org/content/repositories/snapshots'
+	}
+}
+
+
+dependencies {
+	compileOnly group: 'net.md-5', name: 'bungeecord-api', version: '1.15-SNAPSHOT'
+	compileOnly group: 'org.yaml', name: 'snakeyaml', version: '1.26'
+}
+
+compileJava {
+	options.encoding = 'UTF-8'
+	options.incremental = false
+}
+
+
+shadowJar {
+	doFirst {
+		archivePath.delete()
+	}
+
+	from sourceSets.main.java.srcDirs
+	from 'LICENSE'
+
+	archiveName = jar.archiveName
+}
+
+
+task copyFinalJarToTarget(type: DefaultTask) {doLast{
+	java.nio.file.Files.copy(
+		shadowJar.archivePath.getAbsoluteFile().toPath(),
+		new File(targetJarDirectory, jar.baseName + '.jar').getAbsoluteFile().toPath(),
+		java.nio.file.StandardCopyOption.REPLACE_EXISTING
+	)
+}}
+
+
+compileJava.dependsOn(clean)
+compileJava.dependsOn(setupFolders)
+jar.enabled = false
+jar.finalizedBy(shadowJar)
+shadowJar.finalizedBy(copyFinalJarToTarget)
