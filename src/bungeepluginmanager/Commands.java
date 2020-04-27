@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 import org.yaml.snakeyaml.Yaml;
 
@@ -21,14 +22,24 @@ public class Commands extends Command {
 		super("bungeepluginmanager", "bungeepluginmanager.cmds", "bpm");
 	}
 
+	//TODO: split to subcommands
 	@Override
 	public void execute(CommandSender sender, String[] args) {
-		if (args.length < 2) {
+		if (args.length < 1) {
 			sender.sendMessage(textWithColor("Not enough args", ChatColor.RED));
 			return;
 		}
 		switch (args[0].toLowerCase()) {
+			case "list": {
+				sender.sendMessage(textWithColor(ProxyServer.getInstance().getPluginManager().getPlugins().stream().map(plugin -> plugin.getDescription().getName()).collect(Collectors.joining(", ")), ChatColor.GREEN));
+				return;
+			}
 			case "unload": {
+				if (args.length < 2) {
+					sender.sendMessage(textWithColor("Not enough args", ChatColor.RED));
+					return;
+				}
+
 				Plugin plugin = findPlugin(args[1]);
 				if (plugin == null) {
 					sender.sendMessage(textWithColor("Plugin not found", ChatColor.RED));
@@ -44,6 +55,11 @@ public class Commands extends Command {
 				return;
 			}
 			case "load": {
+				if (args.length < 2) {
+					sender.sendMessage(textWithColor("Not enough args", ChatColor.RED));
+					return;
+				}
+
 				Plugin plugin = findPlugin(args[1]);
 				if (plugin != null) {
 					sender.sendMessage(textWithColor("Plugin is already loaded", ChatColor.RED));
@@ -65,6 +81,11 @@ public class Commands extends Command {
 				return;
 			}
 			case "reload": {
+				if (args.length < 2) {
+					sender.sendMessage(textWithColor("Not enough args", ChatColor.RED));
+					return;
+				}
+
 				Plugin plugin = findPlugin(args[1]);
 				if (plugin == null) {
 					sender.sendMessage(textWithColor("Plugin not found", ChatColor.RED));
