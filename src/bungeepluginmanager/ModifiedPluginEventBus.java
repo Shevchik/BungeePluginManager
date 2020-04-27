@@ -11,10 +11,9 @@ import net.md_5.bungee.event.EventBus;
 public class ModifiedPluginEventBus extends EventBus {
 
 	private static final Set<AsyncEvent<?>> uncompletedEvents = Collections.newSetFromMap(new WeakHashMap<AsyncEvent<?>, Boolean>());
-	private static final Object lock = new Object();
 
 	public static void completeIntents(Plugin plugin) {
-		synchronized (lock) {
+		synchronized (uncompletedEvents) {
 			for (AsyncEvent<?> event : uncompletedEvents) {
 				try {
 					event.completeIntent(plugin);
@@ -27,7 +26,7 @@ public class ModifiedPluginEventBus extends EventBus {
 	@Override
 	public void post(Object event) {
 		if (event instanceof AsyncEvent) {
-			synchronized (lock) {
+			synchronized (uncompletedEvents) {
 				uncompletedEvents.add((AsyncEvent<?>) event);
 			}
 		}
