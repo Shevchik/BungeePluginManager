@@ -18,7 +18,7 @@ import net.md_5.bungee.api.plugin.PluginDescription;
 public class Commands extends Command {
 
 	public Commands() {
-		super("bungeepluginmanager", "bungeepluginmanager.cmds", new String[] { "bpm" });
+		super("bungeepluginmanager", "bungeepluginmanager.cmds", "bpm");
 	}
 
 	@Override
@@ -34,8 +34,13 @@ public class Commands extends Command {
 					sender.sendMessage(textWithColor("Plugin not found", ChatColor.RED));
 					return;
 				}
-				PluginUtils.unloadPlugin(plugin);
+
+				Exception unloadError = PluginUtils.unloadPlugin(plugin);
 				sender.sendMessage(textWithColor("Plugin unloaded", ChatColor.YELLOW));
+				if (unloadError != null) {
+					sender.sendMessage(textWithColor("Errors occured while disabling plugin, see console for more details", ChatColor.RED));
+					unloadError.printStackTrace();
+				}
 				return;
 			}
 			case "load": {
@@ -43,17 +48,19 @@ public class Commands extends Command {
 				if (plugin != null) {
 					sender.sendMessage(textWithColor("Plugin is already loaded", ChatColor.RED));
 					return;
-				}				
+				}
 				File file = findFile(args[1]);
 				if (!file.exists()) {
 					sender.sendMessage(textWithColor("Plugin not found", ChatColor.RED));
 					return;
 				}
-				boolean success = PluginUtils.loadPlugin(file);
-				if (success) {
+
+				try {
+					PluginUtils.loadPlugin(file);
 					sender.sendMessage(textWithColor("Plugin loaded", ChatColor.YELLOW));
-				} else {
-					sender.sendMessage(textWithColor("Failed to load plugin, see console for more info", ChatColor.RED));
+				} catch (Throwable t) {
+					sender.sendMessage(textWithColor("Error occured while loading plugin, see console for more details", ChatColor.RED));
+					t.printStackTrace();
 				}
 				return;
 			}
@@ -64,19 +71,25 @@ public class Commands extends Command {
 					return;
 				}
 				File pluginfile = plugin.getFile();
-				PluginUtils.unloadPlugin(plugin);
-				boolean success = PluginUtils.loadPlugin(pluginfile);
-				if (success) {
+
+				Exception unloadError = PluginUtils.unloadPlugin(plugin);
+				if (unloadError != null) {
+					sender.sendMessage(textWithColor("Errors occured while disabling plugin, see console for more details", ChatColor.RED));
+					unloadError.printStackTrace();
+				}
+				try {
+					PluginUtils.loadPlugin(pluginfile);
 					sender.sendMessage(textWithColor("Plugin reloaded", ChatColor.YELLOW));
-				} else {
-					sender.sendMessage(textWithColor("Failed to reload plugin, see console for more info", ChatColor.RED));
+				} catch (Throwable t) {
+					sender.sendMessage(textWithColor("Error occured while loading plugin, see console for more details", ChatColor.RED));
+					t.printStackTrace();
 				}
 				return;
 			}
 		}
 	}
 
-	static Plugin findPlugin(String pluginname) {
+	private static Plugin findPlugin(String pluginname) {
 		for (Plugin plugin : ProxyServer.getInstance().getPluginManager().getPlugins()) {
 			if (plugin.getDescription().getName().equalsIgnoreCase(pluginname)) {
 				return plugin;
@@ -85,7 +98,7 @@ public class Commands extends Command {
 		return null;
 	}
 
-	static File findFile(String pluginname) {
+	private static File findFile(String pluginname) {
 		File folder = ProxyServer.getInstance().getPluginsFolder();
 		if (folder.exists()) {
 			for (File file : folder.listFiles()) {
@@ -109,7 +122,7 @@ public class Commands extends Command {
 		return new File(folder, pluginname+".jar");
 	}
 
-	static TextComponent textWithColor(String message, ChatColor color) {
+	private static TextComponent textWithColor(String message, ChatColor color) {
 		TextComponent text = new TextComponent(message);
 		text.setColor(color);
 		return text;

@@ -28,7 +28,7 @@ public class ModifiedPluginEventBus extends EventBus {
 	public void post(Object event) {
 		if (event instanceof AsyncEvent) {
 			synchronized (lock) {
-				uncompletedEvents.add((AsyncEvent<?>) event);	
+				uncompletedEvents.add((AsyncEvent<?>) event);
 			}
 		}
 		super.post(event);
