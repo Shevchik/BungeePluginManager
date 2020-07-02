@@ -2,11 +2,12 @@ package bungeepluginmanager;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.Locale;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import net.md_5.bungee.api.plugin.TabExecutor;
 import org.yaml.snakeyaml.Yaml;
 
 import net.md_5.bungee.api.ChatColor;
@@ -17,7 +18,7 @@ import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.PluginDescription;
 
-public class Commands extends Command {
+public class Commands extends Command implements TabExecutor {
 
 	public Commands() {
 		super("bungeepluginmanager", "bungeepluginmanager.cmds", "bpm");
@@ -152,5 +153,20 @@ public class Commands extends Command {
 	private String toLowerCase(String s) {
 		// using toLowerCase without locale returns the wrong I, when the system locale is turkish
 		return s.toLowerCase(Locale.ENGLISH);
+	}
+
+	private final Set<String> subCommands = new HashSet<>(Arrays.asList("list", "load", "unload", "reload"));
+
+	@Override
+	public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+		String arg0low = toLowerCase(args[0]);
+		if (args.length == 1) {
+			return subCommands.stream().filter(cmd -> toLowerCase(cmd).startsWith(arg0low)).collect(Collectors.toList());
+		} else {
+			if (args.length == 2 && subCommands.contains(arg0low) && arg0low.contains("load")) {
+				return ProxyServer.getInstance().getPluginManager().getPlugins().stream().map(plugin -> plugin.getDescription().getName()).filter(cmd -> toLowerCase(cmd).startsWith(toLowerCase(args[1]))).collect(Collectors.toList());
+			}
+			return Collections.emptyList();
+		}
 	}
 }
