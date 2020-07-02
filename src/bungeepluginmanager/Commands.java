@@ -2,6 +2,7 @@ package bungeepluginmanager;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Locale;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -29,7 +30,7 @@ public class Commands extends Command {
 			sender.sendMessage(textWithColor("Not enough args", ChatColor.RED));
 			return;
 		}
-		switch (args[0].toLowerCase()) {
+		switch (toLowerCase(args[0])) {
 			case "list": {
 				sender.sendMessage(textWithColor(ProxyServer.getInstance().getPluginManager().getPlugins().stream().map(plugin -> plugin.getDescription().getName()).collect(Collectors.joining(", ")), ChatColor.GREEN));
 				return;
@@ -105,7 +106,6 @@ public class Commands extends Command {
 					sender.sendMessage(textWithColor("Error occured while loading plugin, see console for more details", ChatColor.RED));
 					t.printStackTrace();
 				}
-				return;
 			}
 		}
 	}
@@ -140,7 +140,7 @@ public class Commands extends Command {
 				}
 			}
 		}
-		return new File(folder, pluginname+".jar");
+		return new File(folder, pluginname + ".jar");
 	}
 
 	private static TextComponent textWithColor(String message, ChatColor color) {
@@ -149,4 +149,8 @@ public class Commands extends Command {
 		return text;
 	}
 
+	private String toLowerCase(String s) {
+		// using toLowerCase without locale returns the wrong I, when the system locale is turkish
+		return s.toLowerCase(Locale.ENGLISH);
+	}
 }
