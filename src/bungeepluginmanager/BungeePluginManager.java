@@ -20,4 +20,5 @@ public class BungeePluginManager extends Plugin {
 	public void onEnable() {
 		getProxy().getPluginManager().registerCommand(this, new Commands());
 	}
+
 }

@@ -6,7 +6,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.text.MessageFormat;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -101,7 +103,13 @@ public class PluginUtils {
 		//remove commands that were registered by plugin not through normal means
 		try {
 			Map<String, Command> commandMap = ReflectionUtils.getFieldValue(pluginmanager, "commandMap");
-			commandMap.entrySet().removeIf(entry -> entry.getValue().getClass().getClassLoader() == pluginclassloader);
+			Iterator<Entry<String, Command>> iterator = commandMap.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Entry<String, Command> entry = iterator.next();
+				if (entry.getValue().getClass().getClassLoader() == pluginclassloader) {
+					iterator.remove();
+				}
+			}
 		} catch (Throwable t) {
 			error.addSuppressed(t);
 		}

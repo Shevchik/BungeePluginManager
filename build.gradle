@@ -8,7 +8,7 @@ defaultTasks 'build'
 
 
 group 'bungeepluginmanager'
-version '2.1'
+version '2.0'
 sourceCompatibility = JavaVersion.VERSION_1_8
 
 
