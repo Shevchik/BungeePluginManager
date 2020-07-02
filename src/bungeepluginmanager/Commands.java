@@ -31,7 +31,7 @@ public class Commands extends Command implements TabExecutor {
 			sender.sendMessage(textWithColor("Not enough args", ChatColor.RED));
 			return;
 		}
-		switch (args[0].toLowerCase(Locale.ENGLISH)) {
+		switch (fixedLowerCase(args[0])) {
 			case "list": {
 				sender.sendMessage(textWithColor(String.join(", ", getPluginList()), ChatColor.GREEN));
 				return;
@@ -155,24 +155,8 @@ public class Commands extends Command implements TabExecutor {
 		return text;
 	}
 
-	private String lowerCase(String s) {
+	private String fixedLowerCase(String s) {
 		// using toLowerCase without locale returns the wrong I, when the system locale is turkish
 		return s.toLowerCase(Locale.ENGLISH);
-	}
-
-	private final Set<String> subCommands = new HashSet<>(Arrays.asList("list", "load", "unload", "reload"));
-
-	@Override
-	public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
-		String arg0low = lowerCase(args[0]);
-		if (args.length == 1) {
-			return subCommands.stream().filter(cmd -> lowerCase(cmd).startsWith(arg0low)).collect(Collectors.toList());
-		} else {
-			if (args.length == 2 && subCommands.contains(arg0low) && arg0low.contains("load")) {
-				return getPluginList().stream().filter(cmd -> lowerCase(cmd).startsWith(lowerCase(args[1])))
-					.collect(Collectors.toList());
-			}
-			return Collections.emptyList();
-		}
 	}
 }
