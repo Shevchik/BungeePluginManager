@@ -10,7 +10,7 @@ import net.md_5.bungee.event.EventBus;
 
 public class ModifiedPluginEventBus extends EventBus {
 
-	private static final Set<AsyncEvent<?>> uncompletedEvents = Collections.newSetFromMap(new WeakHashMap<AsyncEvent<?>, Boolean>());
+	private static final Set<AsyncEvent<?>> uncompletedEvents = Collections.newSetFromMap(new WeakHashMap<>());
 
 	public static void completeIntents(Plugin plugin) {
 		synchronized (uncompletedEvents) {
