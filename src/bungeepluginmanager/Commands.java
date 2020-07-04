@@ -2,10 +2,14 @@ package bungeepluginmanager;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import net.md_5.bungee.api.plugin.TabExecutor;
 import org.yaml.snakeyaml.Yaml;
@@ -33,7 +37,7 @@ public class Commands extends Command implements TabExecutor {
 		}
 		switch (toLowerCase(args[0])) {
 			case "list": {
-				sender.sendMessage(textWithColor(ProxyServer.getInstance().getPluginManager().getPlugins().stream().map(plugin -> plugin.getDescription().getName()).collect(Collectors.joining(", ")), ChatColor.GREEN));
+				sender.sendMessage(textWithColor(getPluginNamesStream().collect(Collectors.joining(", ")), ChatColor.GREEN));
 				return;
 			}
 			case "unload": {
@@ -144,6 +148,11 @@ public class Commands extends Command implements TabExecutor {
 		return new File(folder, pluginname + ".jar");
 	}
 
+	private Stream<String> getPluginNamesStream() {
+		return ProxyServer.getInstance().getPluginManager().getPlugins().stream().map(plugin -> plugin.getDescription().getName());
+	}
+
+
 	private static TextComponent textWithColor(String message, ChatColor color) {
 		TextComponent text = new TextComponent(message);
 		text.setColor(color);
@@ -155,7 +164,7 @@ public class Commands extends Command implements TabExecutor {
 		return s.toLowerCase(Locale.ENGLISH);
 	}
 
-	private final Set<String> subCommands = new HashSet<>(Arrays.asList("list", "load", "unload", "reload"));
+	private final List<String> subCommands = Arrays.asList("list", "load", "unload", "reload");
 
 	@Override
 	public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
@@ -164,7 +173,7 @@ public class Commands extends Command implements TabExecutor {
 			return subCommands.stream().filter(cmd -> toLowerCase(cmd).startsWith(arg0low)).collect(Collectors.toList());
 		} else {
 			if (args.length == 2 && subCommands.contains(arg0low) && arg0low.contains("load")) {
-				return ProxyServer.getInstance().getPluginManager().getPlugins().stream().map(plugin -> plugin.getDescription().getName()).filter(cmd -> toLowerCase(cmd).startsWith(toLowerCase(args[1]))).collect(Collectors.toList());
+				return getPluginNamesStream().filter(cmd -> toLowerCase(cmd).startsWith(toLowerCase(args[1]))).collect(Collectors.toList());
 			}
 			return Collections.emptyList();
 		}
