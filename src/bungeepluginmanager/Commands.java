@@ -2,16 +2,17 @@ package bungeepluginmanager;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import net.md_5.bungee.api.plugin.TabExecutor;
 import org.yaml.snakeyaml.Yaml;
 
 import net.md_5.bungee.api.ChatColor;
@@ -21,14 +22,18 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.PluginDescription;
+import net.md_5.bungee.api.plugin.TabExecutor;
 
+//TODO: split to subcommands
 public class Commands extends Command implements TabExecutor {
 
-	public Commands() {
+	private final Logger logger;
+
+	public Commands(Logger logger) {
 		super("bungeepluginmanager", "bungeepluginmanager.cmds", "bpm");
+		this.logger = logger;
 	}
 
-	//TODO: split to subcommands
 	@Override
 	public void execute(CommandSender sender, String[] args) {
 		if (args.length < 1) {
@@ -52,11 +57,12 @@ public class Commands extends Command implements TabExecutor {
 					return;
 				}
 
-				Exception unloadError = PluginUtils.unloadPlugin(plugin);
-				sender.sendMessage(textWithColor("Plugin unloaded", ChatColor.YELLOW));
-				if (unloadError != null) {
-					sender.sendMessage(textWithColor("Errors occured while disabling plugin, see console for more details", ChatColor.RED));
-					unloadError.printStackTrace();
+				try {
+					PluginUtils.unloadPlugin(plugin);
+					sender.sendMessage(textWithColor("Plugin unloaded", ChatColor.YELLOW));
+				} catch (Throwable t) {
+					sender.sendMessage(textWithColor("Error occured while unloading plugin, see console for more details", ChatColor.RED));
+					logger.log(Level.WARNING, "Failed to unload plugin " + plugin.getDescription().getName(), t);
 				}
 				return;
 			}
@@ -66,23 +72,23 @@ public class Commands extends Command implements TabExecutor {
 					return;
 				}
 
-				Plugin plugin = findPlugin(args[1]);
-				if (plugin != null) {
+				if (findPlugin(args[1]) != null) {
 					sender.sendMessage(textWithColor("Plugin is already loaded", ChatColor.RED));
 					return;
 				}
-				File file = findFile(args[1]);
-				if (!file.exists()) {
+
+				File pluginFile = findFile(args[1]);
+				if (!pluginFile.exists()) {
 					sender.sendMessage(textWithColor("Plugin not found", ChatColor.RED));
 					return;
 				}
 
 				try {
-					PluginUtils.loadPlugin(file);
+					PluginUtils.loadPlugin(pluginFile);
 					sender.sendMessage(textWithColor("Plugin loaded", ChatColor.YELLOW));
 				} catch (Throwable t) {
 					sender.sendMessage(textWithColor("Error occured while loading plugin, see console for more details", ChatColor.RED));
-					t.printStackTrace();
+					logger.log(Level.WARNING, "Failed to load plugin " + pluginFile.getName(), t);
 				}
 				return;
 			}
@@ -97,19 +103,15 @@ public class Commands extends Command implements TabExecutor {
 					sender.sendMessage(textWithColor("Plugin not found", ChatColor.RED));
 					return;
 				}
-				File pluginfile = plugin.getFile();
+				File pluginFile = plugin.getFile();
 
-				Exception unloadError = PluginUtils.unloadPlugin(plugin);
-				if (unloadError != null) {
-					sender.sendMessage(textWithColor("Errors occured while disabling plugin, see console for more details", ChatColor.RED));
-					unloadError.printStackTrace();
-				}
 				try {
-					PluginUtils.loadPlugin(pluginfile);
+					PluginUtils.unloadPlugin(plugin);
+					PluginUtils.loadPlugin(pluginFile);
 					sender.sendMessage(textWithColor("Plugin reloaded", ChatColor.YELLOW));
 				} catch (Throwable t) {
-					sender.sendMessage(textWithColor("Error occured while loading plugin, see console for more details", ChatColor.RED));
-					t.printStackTrace();
+					sender.sendMessage(textWithColor("Error occured while reloading plugin, see console for more details", ChatColor.RED));
+					logger.log(Level.WARNING, "Failed to reload plugin " + "(" + plugin.getDescription().getName() + "," + pluginFile.getName() + ")", t);
 				}
 			}
 		}
@@ -159,11 +161,6 @@ public class Commands extends Command implements TabExecutor {
 		return text;
 	}
 
-	private String toLowerCase(String s) {
-		// using toLowerCase without locale returns the wrong I, when the system locale is turkish
-		return s.toLowerCase(Locale.ENGLISH);
-	}
-
 	private final List<String> subCommands = Arrays.asList("list", "load", "unload", "reload");
 
 	@Override
@@ -172,10 +169,15 @@ public class Commands extends Command implements TabExecutor {
 		if (args.length == 1) {
 			return subCommands.stream().filter(cmd -> toLowerCase(cmd).startsWith(arg0low)).collect(Collectors.toList());
 		} else {
-			if (args.length == 2 && subCommands.contains(arg0low) && arg0low.contains("load")) {
+			if ((args.length == 2) && subCommands.contains(arg0low) && arg0low.contains("load")) {
 				return getPluginNamesStream().filter(cmd -> toLowerCase(cmd).startsWith(toLowerCase(args[1]))).collect(Collectors.toList());
 			}
 			return Collections.emptyList();
 		}
 	}
+
+	private static String toLowerCase(String s) {
+		return s.toLowerCase(Locale.ENGLISH);
+	}
+
 }

@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.logging.Handler;
-import java.util.logging.Level;
 
 import org.yaml.snakeyaml.Yaml;
 
@@ -26,7 +25,7 @@ import net.md_5.bungee.api.plugin.PluginManager;
 public class PluginUtils {
 
 	@SuppressWarnings("deprecation")
-	public static Exception unloadPlugin(Plugin plugin) {
+	public static void unloadPlugin(Plugin plugin) {
 		IllegalStateException error = new IllegalStateException("Errors occured while unloading plugin " + plugin.getDescription().getName()) {
 			private static final long serialVersionUID = 1L;
 			@Override
@@ -137,7 +136,9 @@ public class PluginUtils {
 			error.addSuppressed(t);
 		}
 
-		return error.getSuppressed().length > 0 ? error : null;
+		if (error.getSuppressed().length > 0) {
+			throw error;
+		}
 	}
 
 	public static void loadPlugin(File pluginfile) {
@@ -180,10 +181,6 @@ public class PluginUtils {
 		} catch (Throwable t) {
 			throw new IllegalStateException("Error while loading plugin " + pluginfile.getName(), t);
 		}
-	}
-
-	static void severe(String message, Throwable t) {
-		ProxyServer.getInstance().getLogger().log(Level.SEVERE,  message);
 	}
 
 }
