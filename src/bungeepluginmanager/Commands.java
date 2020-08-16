@@ -2,10 +2,16 @@ package bungeepluginmanager;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import net.md_5.bungee.api.plugin.TabExecutor;
 import org.yaml.snakeyaml.Yaml;
 
 import net.md_5.bungee.api.ChatColor;
@@ -16,7 +22,7 @@ import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.PluginDescription;
 
-public class Commands extends Command {
+public class Commands extends Command implements TabExecutor {
 
 	public Commands() {
 		super("bungeepluginmanager", "bungeepluginmanager.cmds", "bpm");
@@ -29,9 +35,9 @@ public class Commands extends Command {
 			sender.sendMessage(textWithColor("Not enough args", ChatColor.RED));
 			return;
 		}
-		switch (args[0].toLowerCase()) {
+		switch (toLowerCase(args[0])) {
 			case "list": {
-				sender.sendMessage(textWithColor(ProxyServer.getInstance().getPluginManager().getPlugins().stream().map(plugin -> plugin.getDescription().getName()).collect(Collectors.joining(", ")), ChatColor.GREEN));
+				sender.sendMessage(textWithColor(getPluginNamesStream().collect(Collectors.joining(", ")), ChatColor.GREEN));
 				return;
 			}
 			case "unload": {
@@ -105,7 +111,6 @@ public class Commands extends Command {
 					sender.sendMessage(textWithColor("Error occured while loading plugin, see console for more details", ChatColor.RED));
 					t.printStackTrace();
 				}
-				return;
 			}
 		}
 	}
@@ -140,8 +145,13 @@ public class Commands extends Command {
 				}
 			}
 		}
-		return new File(folder, pluginname+".jar");
+		return new File(folder, pluginname + ".jar");
 	}
+
+	private Stream<String> getPluginNamesStream() {
+		return ProxyServer.getInstance().getPluginManager().getPlugins().stream().map(plugin -> plugin.getDescription().getName());
+	}
+
 
 	private static TextComponent textWithColor(String message, ChatColor color) {
 		TextComponent text = new TextComponent(message);
@@ -149,4 +159,23 @@ public class Commands extends Command {
 		return text;
 	}
 
+	private String toLowerCase(String s) {
+		// using toLowerCase without locale returns the wrong I, when the system locale is turkish
+		return s.toLowerCase(Locale.ENGLISH);
+	}
+
+	private final List<String> subCommands = Arrays.asList("list", "load", "unload", "reload");
+
+	@Override
+	public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+		String arg0low = toLowerCase(args[0]);
+		if (args.length == 1) {
+			return subCommands.stream().filter(cmd -> toLowerCase(cmd).startsWith(arg0low)).collect(Collectors.toList());
+		} else {
+			if (args.length == 2 && subCommands.contains(arg0low) && arg0low.contains("load")) {
+				return getPluginNamesStream().filter(cmd -> toLowerCase(cmd).startsWith(toLowerCase(args[1]))).collect(Collectors.toList());
+			}
+			return Collections.emptyList();
+		}
+	}
 }
