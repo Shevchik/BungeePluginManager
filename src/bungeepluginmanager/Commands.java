@@ -169,7 +169,7 @@ public class Commands extends Command implements TabExecutor {
 		if (args.length == 1) {
 			return subCommands.stream().filter(cmd -> toLowerCase(cmd).startsWith(arg0low)).collect(Collectors.toList());
 		} else {
-			if ((args.length == 2) && subCommands.contains(arg0low) && arg0low.contains("load")) {
+			if ((args.length == 2) && subCommands.contains(arg0low) && (arg0low.equals("unload") || (arg0low.equals("reload")))) {
 				return getPluginNamesStream().filter(cmd -> toLowerCase(cmd).startsWith(toLowerCase(args[1]))).collect(Collectors.toList());
 			}
 			return Collections.emptyList();
