@@ -2,9 +2,14 @@ package bungeepluginmanager;
 
 import java.io.File;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Parameter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -141,46 +146,74 @@ public class PluginUtils {
 		}
 	}
 
-	public static void loadPlugin(File pluginfile) {
-		ProxyServer proxyserver = ProxyServer.getInstance();
-		PluginManager pluginmanager = proxyserver.getPluginManager();
+	public static void loadPlugin(File pluginFile) {
+		ProxyServer proxy = ProxyServer.getInstance();
+		PluginManager pluginmanager = proxy.getPluginManager();
 
-		try (JarFile jar = new JarFile(pluginfile)) {
+		try (JarFile jar = new JarFile(pluginFile)) {
 			JarEntry pdf = jar.getJarEntry("bungee.yml");
 			if (pdf == null) {
 				pdf = jar.getJarEntry("plugin.yml");
 			}
 			try (InputStream in = jar.getInputStream(pdf)) {
 				//load description
-				PluginDescription desc = new Yaml().loadAs(in, PluginDescription.class);
-				desc.setFile(pluginfile);
+				PluginDescription pluginDescription = new Yaml().loadAs(in, PluginDescription.class);
+				pluginDescription.setFile(pluginFile);
 				//check depends
 				HashSet<String> plugins = new HashSet<>();
 				for (Plugin plugin : pluginmanager.getPlugins()) {
 					plugins.add(plugin.getDescription().getName());
 				}
-				for (String dependency : desc.getDepends()) {
+				for (String dependency : pluginDescription.getDepends()) {
 					if (!plugins.contains(dependency)) {
 						throw new IllegalArgumentException(MessageFormat.format("Missing plugin dependency {0}", dependency));
 					}
 				}
 				//load plugin
-				Plugin plugin = (Plugin)
-					ReflectionUtils.setAccessible(
-						BungeePluginManager.class.getClassLoader().getClass()
-						.getDeclaredConstructor(ProxyServer.class, PluginDescription.class, URL[].class)
-					)
-					.newInstance(proxyserver, desc, new URL[] {pluginfile.toURI().toURL()})
-					.loadClass(desc.getMain()).getDeclaredConstructor()
-					.newInstance();
-				ReflectionUtils.invokeMethod(plugin, "init", proxyserver, desc);
-				ReflectionUtils.<Map<String, Plugin>>getFieldValue(pluginmanager, "plugins").put(desc.getName(), plugin);
+				Plugin plugin = createPluginInstance(proxy, pluginFile, pluginDescription);
+				ReflectionUtils.invokeMethod(plugin, "init", proxy, pluginDescription);
+				ReflectionUtils.<Map<String, Plugin>>getFieldValue(pluginmanager, "plugins").put(pluginDescription.getName(), plugin);
 				plugin.onLoad();
 				plugin.onEnable();
 			}
 		} catch (Throwable t) {
-			throw new IllegalStateException("Error while loading plugin " + pluginfile.getName(), t);
+			throw new IllegalStateException("Error while loading plugin " + pluginFile.getName(), t);
 		}
+	}
+
+	private static Plugin createPluginInstance(ProxyServer proxy, File pluginFile, PluginDescription pluginDescription) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, MalformedURLException, NoSuchMethodException, SecurityException, ClassNotFoundException {
+		Class<?> pluginClassLoaderClass = BungeePluginManager.class.getClassLoader().getClass();
+		ClassLoader pluginClassLoader = null;
+		for (Constructor<?> constructor : pluginClassLoaderClass.getDeclaredConstructors()) {
+			ReflectionUtils.setAccessible(constructor);
+			Parameter[] parameters = constructor.getParameters();
+			if (
+				(parameters.length == 3) &&
+				parameters[0].getType().isAssignableFrom(ProxyServer.class) &&
+				parameters[1].getType().isAssignableFrom(PluginDescription.class) &&
+				parameters[2].getType().isAssignableFrom(URL[].class)
+			) {
+				pluginClassLoader = (ClassLoader) constructor.newInstance(proxy, pluginDescription, new URL[] {pluginFile.toURI().toURL()});
+				break;
+			} else if (
+				(parameters.length == 1) &&
+				parameters[0].getType().isAssignableFrom(URL[].class)
+			) {
+				pluginClassLoader = (ClassLoader) constructor.newInstance(new Object[] {new URL[] {pluginFile.toURI().toURL()}});
+				break;
+			}
+		}
+		if (pluginClassLoader == null) {
+			throw new IllegalStateException(MessageFormat.format(
+				"Unable to create PluginClassLoader instance, no suitable constructors found in class {0} constructors {1}",
+				pluginClassLoaderClass, Arrays.toString(pluginClassLoaderClass.getDeclaredConstructors())
+			));
+		}
+		return (Plugin)
+			pluginClassLoader
+			.loadClass(pluginDescription.getMain())
+			.getDeclaredConstructor()
+			.newInstance();
 	}
 
 }
