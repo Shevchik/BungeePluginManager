@@ -33,6 +33,7 @@ public class PluginUtils {
 	public static void unloadPlugin(Plugin plugin) {
 		IllegalStateException error = new IllegalStateException("Errors occured while unloading plugin " + plugin.getDescription().getName()) {
 			private static final long serialVersionUID = 1L;
+
 			@Override
 			public synchronized Throwable fillInStackTrace() {
 				return this;
@@ -189,17 +190,26 @@ public class PluginUtils {
 			Parameter[] parameters = constructor.getParameters();
 			if (
 				(parameters.length == 3) &&
-				parameters[0].getType().isAssignableFrom(ProxyServer.class) &&
-				parameters[1].getType().isAssignableFrom(PluginDescription.class) &&
-				parameters[2].getType().isAssignableFrom(URL[].class)
+					parameters[0].getType().isAssignableFrom(ProxyServer.class) &&
+					parameters[1].getType().isAssignableFrom(PluginDescription.class) &&
+					parameters[2].getType().isAssignableFrom(URL[].class)
 			) {
-				pluginClassLoader = (ClassLoader) constructor.newInstance(proxy, pluginDescription, new URL[] {pluginFile.toURI().toURL()});
+				pluginClassLoader = (ClassLoader) constructor.newInstance(proxy, pluginDescription, new URL[]{pluginFile.toURI().toURL()});
+				break;
+			} else if (
+				(parameters.length == 4) &&
+					parameters[0].getType().isAssignableFrom(ProxyServer.class) &&
+					parameters[1].getType().isAssignableFrom(PluginDescription.class) &&
+					parameters[2].getType().isAssignableFrom(File.class) &&
+					parameters[3].getType().isAssignableFrom(ClassLoader.class)
+			) {
+				pluginClassLoader = (ClassLoader) constructor.newInstance(proxy, pluginDescription,pluginFile , null);
 				break;
 			} else if (
 				(parameters.length == 1) &&
-				parameters[0].getType().isAssignableFrom(URL[].class)
+					parameters[0].getType().isAssignableFrom(URL[].class)
 			) {
-				pluginClassLoader = (ClassLoader) constructor.newInstance(new Object[] {new URL[] {pluginFile.toURI().toURL()}});
+				pluginClassLoader = (ClassLoader) constructor.newInstance(new Object[]{new URL[]{pluginFile.toURI().toURL()}});
 				break;
 			}
 		}
@@ -211,9 +221,9 @@ public class PluginUtils {
 		}
 		return (Plugin)
 			pluginClassLoader
-			.loadClass(pluginDescription.getMain())
-			.getDeclaredConstructor()
-			.newInstance();
+				.loadClass(pluginDescription.getMain())
+				.getDeclaredConstructor()
+				.newInstance();
 	}
 
 }
