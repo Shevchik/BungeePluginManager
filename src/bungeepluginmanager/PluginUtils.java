@@ -196,6 +196,15 @@ public class PluginUtils {
 				pluginClassLoader = (ClassLoader) constructor.newInstance(proxy, pluginDescription, new URL[] {pluginFile.toURI().toURL()});
 				break;
 			} else if (
+				(parameters.length == 4) &&
+					parameters[0].getType().isAssignableFrom(ProxyServer.class) &&
+					parameters[1].getType().isAssignableFrom(PluginDescription.class) &&
+					parameters[2].getType().isAssignableFrom(File.class) &&
+					parameters[3].getType().isAssignableFrom(ClassLoader.class)
+			) {
+				pluginClassLoader = (ClassLoader) constructor.newInstance(proxy, pluginDescription,pluginFile , null);
+				break;
+			} else if (
 				(parameters.length == 1) &&
 				parameters[0].getType().isAssignableFrom(URL[].class)
 			) {
