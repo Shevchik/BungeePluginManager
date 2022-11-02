@@ -41,7 +41,7 @@ repositories {
 
 
 dependencies {
-	compileOnly group: 'net.md-5', name: 'bungeecord-api', version: '1.15-SNAPSHOT'
+	compileOnly group: 'net.md-5', name: 'bungeecord-api', version: '1.16-R0.4'
 	compileOnly group: 'org.yaml', name: 'snakeyaml', version: '1.26'
 }
 
